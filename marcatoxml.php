@@ -434,7 +434,7 @@ class marcatoxml_importer {
 				if(!empty($artist->shows)){
 					$i = 0;
 					foreach($artist->shows->show as $show){
-						foreach(array('name','show_on_website','date','formatted_date','venue_name') as $field){
+						foreach(array('id','name','show_on_website','date','formatted_date','venue_name') as $field){
 							$post_meta["marcato_artist_show_".$i."_".$field] = $show->$field;
 						}
 						$i++;
