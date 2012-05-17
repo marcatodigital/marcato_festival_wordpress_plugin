@@ -101,6 +101,7 @@ class marcatoxml_plugin {
 			"label"=>"Artists", "has_archive"=>"artists", 
 			"labels"=>array("name"=>"Artists","singular_name"=>"Artist"), 
 			"public"=>true, 
+			"has_archive"=>true,
 			"rewrite"=>array("slug"=>"artists", "with_front"=>false),
 			"supports"=>$supports,
 			"menu_icon"=>plugin_dir_url(__FILE__)."/images/wp_marcato_logo.png",
@@ -111,6 +112,7 @@ class marcatoxml_plugin {
 			"label"=>"Venues", "has_archive"=>"venues",
 			"labels"=>array("name"=>"Venues","singular_name"=>"Venue"),
 			"public"=>true,
+			"has_archive"=>true,
 			"rewrite"=>array("slug"=>"venues", "with_front"=>false),
 			"supports"=>$supports,
 			"menu_icon"=>plugin_dir_url(__FILE__)."/images/wp_marcato_logo.png",
@@ -121,6 +123,7 @@ class marcatoxml_plugin {
 			"label"=>"Shows", "has_archive"=>"shows",
 			"labels"=>array("name"=>"Shows","singular_name"=>"Show"),
 			"public"=>true,
+			"has_archive"=>true,
 			"rewrite"=>array("slug"=>"shows", "with_front"=>false),
 			"supports"=>$supports,
 			"menu_icon"=>plugin_dir_url(__FILE__)."/images/wp_marcato_logo.png",
@@ -131,12 +134,34 @@ class marcatoxml_plugin {
 			"label"=>"Workshops", "has_archive"=>"workshops",
 			"labels"=>array("name"=>"Workshops","singular_name"=>"Workshop"),
 			"public"=>true,
+			"has_archive"=>true,
 			"rewrite"=>array("slug"=>"workshops", "with_front"=>false),
 			"supports"=>$supports,
 			"menu_icon"=>plugin_dir_url(__FILE__)."/images/wp_marcato_logo.png",
 			"taxonomies"=>array("category","post_tag")
 			)
 		);
+		$labels = array(
+		  'name' => _x( 'Genres', 'taxonomy general name' ),
+		  'singular_name' => _x( 'Genre', 'taxonomy singular name' ),
+		  'search_items' =>  __( 'Search Genres' ),
+		  'all_items' => __( 'All Genres' ),
+		  'parent_item' => __( 'Parent Genre' ),
+		  'parent_item_colon' => __( 'Parent Genre:' ),
+		  'edit_item' => __( 'Edit Genre' ), 
+		  'update_item' => __( 'Update Genre' ),
+		  'add_new_item' => __( 'Add New Genre' ),
+		  'new_item_name' => __( 'New Genre Name' ),
+		  'menu_name' => __( 'Genres' ),
+		); 	
+		register_taxonomy( 'marcato_genre', array('marcato_artist'), array(
+		  'hierarchical' => true,
+		  'labels' => $labels,
+		  'show_ui' => true,
+		  'has_archive' => true, 
+		  'query_var' => true,
+		  'rewrite' => array( 'slug' => 'genre' ),
+		) );
 	}
 		
 	public function import($field){
@@ -361,7 +386,7 @@ class marcatoxml_importer {
 					$this->set_featured_image($existing_post_id, $post['post_attachment']);
 				}
 				if(isset($post['post_meta'])){
-					$this->set_post_meta($existing_post_id, $post['post_meta']);
+					$this->set_post_meta($existing_post_id, $post['post_meta'], $post['post_taxonomy']);
 				}
 				return $existing_post_id;
 			}else{
@@ -377,7 +402,7 @@ class marcatoxml_importer {
 					$this->set_featured_image($post_id, $post['post_attachment']);
 				}
 				if(isset($post['post_meta'])){
-					$this->set_post_meta($post_id, $post['post_meta']);
+					$this->set_post_meta($post_id, $post['post_meta'], $post['post_taxonomy']);
 				}
 				return $post_id;
 			}else{
@@ -448,6 +473,11 @@ class marcatoxml_importer {
 				foreach(array('name','bio_public','bio_limited','homebase','web_photo_url','web_photo_url_root','photo_url','photo_url_root','updated_at') as $field){
 					$post_meta["marcato_artist_".$field] = nl2br((string)$artist->$field);
 				}
+				if(!empty($artist->genre)){
+
+					$post_taxonomy['marcato_genre'] = $artist->genre->asXML();
+					
+				}
 				if(!empty($artist->shows)){
 					$i = 0;
 					foreach($artist->shows->show as $show){
@@ -475,7 +505,7 @@ class marcatoxml_importer {
 					}
 				}
 			}
-			$posts[$index] = compact('post_content', 'post_title','post_type', 'post_marcato_id','post_status','post_attachment','post_meta','post_excerpt');
+			$posts[$index] = compact('post_content', 'post_title','post_type', 'post_taxonomy', 'post_marcato_id','post_status','post_attachment','post_meta','post_excerpt');
 			$index++;
 		}
 		return $posts;
@@ -874,10 +904,15 @@ class marcatoxml_importer {
 			return "";
 		}
 	}
-	private function set_post_meta($post_id, $meta_data){
+	private function set_post_meta($post_id, $meta_data, $taxonomy_data){
 		if($this->options["include_meta_data"]=="1" && !empty($meta_data)){
 			foreach($meta_data as $key=>$value){
 				add_post_meta($post_id, (String)$key, (String)$value, true);
+			}
+			foreach($taxonomy_data as $tax => $name){
+				if( !$term = term_exists( $name, $tax ) ){
+					$term = wp_insert_term( $name, $tax, array( 'slug' => sanitize_title_with_dashes( $name ) ) );
+				}
 			}
 		}
 	}
