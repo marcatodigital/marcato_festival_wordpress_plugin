@@ -778,7 +778,7 @@ class marcatoxml_importer {
 					}
 					$i++;
 				}
-				foreach(array('name','street','city','province_state','country','postal_code','community','longitude','latitude','primary_phone_number','photo_url','photo_url_root','updated_at') as $field){
+				foreach(array('name','street','city','province_state','country','postal_code','community','directions','longitude','latitude','primary_phone_number','photo_url','photo_url_root','updated_at') as $field){
 					$post_meta["marcato_venue_".$field] = $venue->$field;
 				}
 			}			
