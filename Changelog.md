@@ -1,3 +1,7 @@
+**Version 1.3.3**  
+* Added directions and description Custom Fields (post_meta) to Venues posts
+* bumped version number in plugin, readme, and changelog
+
 **Version 1.3.2**  
 * Fixed venue link on show and workshop pages
 
