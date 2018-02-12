@@ -703,6 +703,19 @@ class marcatoxml_importer {
 			if(!empty($artist->genre)){
 				$post_content .= "<div class='artist_genre'>" . $artist->genre . "</div>";
 			}
+
+			/*
+			* Adding categories to post_content of artists.
+			* For testing purposes only.
+			*
+			* Example code:
+			* if(!empty($artist->categories)){
+			* 	foreach($artist->categories->category as $category){
+			*		$post_content .= "<div class='artist_genre>Category (foreach):" . $category . "</div>";
+			*	}
+			* }
+			*/
+
 			if (!empty($artist->web_photo_url)){
 				if ($this->options['attach_photos']=="1" || $this->options['include_photos_in_posts']=="1"){
 					$post_attachment = array('url'=>(string)$artist->web_photo_url_root . "large.jpg", 'name'=>(string)$artist->name, 'fingerprint'=>(string)$artist->web_photo_fingerprint, 'field'=>'web_photo');
@@ -797,6 +810,20 @@ class marcatoxml_importer {
 			if(!empty($artist->genre)){
 				$post_taxonomy['marcato_genre'] = (string)$artist->genre;
 			}
+
+			/*
+			* Import categories for artists from Marcato.
+			* For each category in categories in the XML-file the item is added into the category taxonomy.
+			*/
+
+			if(!empty($artist->categories)){
+				$categories = array();
+				foreach($artist->categories->category as $category){
+					$categories[] = (string)$category;
+				}
+				$post_taxonomy['category'] = $categories;
+			}
+
 			$post_meta = array();
 			if ($this->options["include_meta_data"]=="1"){
 				foreach(array('name','bio_public','bio_limited','secondary_language_bio','homebase','web_photo_url','web_photo_url_root','photo_url','photo_url_root','updated_at') as $field){
