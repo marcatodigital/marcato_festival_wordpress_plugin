@@ -1016,6 +1016,25 @@ class marcatoxml_importer {
 			}else{
 				$post_excerpt = "";
 			}
+
+			/*
+			* Get show tags as categories.
+			*/ 
+
+			if(!empty($show->tags)){
+				$tags = array();
+				foreach($show->tags->tag as $tag){
+					$tags[] = (string)$tag->name;
+					echo '<p>print_r $tag';
+					print_r($tag);
+					echo '</p>';
+					echo '<p>tag->name' . $tag->name . '</p>';
+
+				}
+				$post_taxonomy['category'] = $tags;
+				echo '<p>' . print_r($tags) . '</p>';
+			}
+
 			$post_meta = array();
 			if ($this->options["include_meta_data"]=="1"){
 				foreach(array('name','date','formatted_date','venue_name','formatted_start_time','start_time_unix','formatted_end_time','facebook_link','description_public','description_web','ticket_info','ticket_link','price','poster_url','poster_url_root','updated_at','seating') as $field){
@@ -1039,7 +1058,7 @@ class marcatoxml_importer {
 					}
 				}
 			}			
-			$posts[$index] = compact('post_content', 'post_title', 'post_type', 'post_marcato_id','post_attachment','post_meta','post_excerpt');
+			$posts[$index] = compact('post_content', 'post_title', 'post_type', 'post_marcato_id','post_attachment','post_taxonomy','post_meta','post_excerpt');
 			$index++;
 		}
 		$this->remove_posts_missing_from_xml_feed($ids, $post_type, $org_id);
