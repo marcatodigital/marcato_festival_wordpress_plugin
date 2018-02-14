@@ -1025,14 +1025,8 @@ class marcatoxml_importer {
 				$tags = array();
 				foreach($show->tags->tag as $tag){
 					$tags[] = (string)$tag->name;
-					echo '<p>print_r $tag';
-					print_r($tag);
-					echo '</p>';
-					echo '<p>tag->name' . $tag->name . '</p>';
-
 				}
 				$post_taxonomy['category'] = $tags;
-				echo '<p>' . print_r($tags) . '</p>';
 			}
 
 			$post_meta = array();
