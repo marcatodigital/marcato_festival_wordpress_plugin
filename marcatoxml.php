@@ -1023,10 +1023,14 @@ class marcatoxml_importer {
 
 			if(!empty($show->tags)){
 				$tags = array();
+				$tags[] = 'Program';
 				foreach($show->tags->tag as $tag){
 					$tags[] = (string)$tag->name;
 				}
 				$post_taxonomy['category'] = $tags;
+			}
+			else{
+				$post_taxonomy['category'] = 'Program';
 			}
 
 			$post_meta = array();
