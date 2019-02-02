@@ -660,6 +660,19 @@ class marcatoxml_importer {
 			if(!empty($artist->genre)){
 				$post_content .= "<div class='artist_genre'>" . $artist->genre . "</div>";
 			}
+
+			/*
+			* Adding categories to post_content of artists.
+			* For testing purposes only.
+			*
+			* Example code:
+			* if(!empty($artist->categories)){
+			* 	foreach($artist->categories->category as $category){
+			*		$post_content .= "<div class='artist_genre>Category (foreach):" . $category . "</div>";
+			*	}
+			* }
+			*/
+
 			if (!empty($artist->web_photo_url)){
 				if ($this->options['attach_photos']=="1" || $this->options['include_photos_in_posts']=="1"){
 					$post_attachment = array('url'=>(string)$artist->web_photo_url_root . "large.jpg", 'name'=>(string)$artist->name, 'fingerprint'=>(string)$artist->web_photo_fingerprint, 'field'=>'web_photo');
@@ -754,6 +767,20 @@ class marcatoxml_importer {
 			if(!empty($artist->genre)){
 				$post_taxonomy['marcato_genre'] = (string)$artist->genre;
 			}
+
+			/*
+			* Import categories for artists from Marcato.
+			* For each category in categories in the XML-file the item is added into the category taxonomy.
+			*/
+
+			if(!empty($artist->categories)){
+				$categories = array();
+				foreach($artist->categories->category as $category){
+					$categories[] = (string)$category;
+				}
+				$post_taxonomy['category'] = $categories;
+			}
+
 			$post_meta = array();
 			if ($this->options["include_meta_data"]=="1"){
 				foreach(array('name','bio_public','bio_limited','secondary_language_bio','homebase','web_photo_url','web_photo_url_root','photo_url','photo_url_root','updated_at') as $field){
@@ -946,6 +973,23 @@ class marcatoxml_importer {
 			}else{
 				$post_excerpt = "";
 			}
+
+			/*
+			* Get show tags as categories.
+			*/ 
+
+			if(!empty($show->tags)){
+				$tags = array();
+				$tags[] = 'Program';
+				foreach($show->tags->tag as $tag){
+					$tags[] = (string)$tag->name;
+				}
+				$post_taxonomy['category'] = $tags;
+			}
+			else{
+				$post_taxonomy['category'] = 'Program';
+			}
+
 			$post_meta = array();
 			if ($this->options["include_meta_data"]=="1"){
 				foreach(array('name','date','formatted_date','venue_name','formatted_start_time','start_time_unix','formatted_end_time','facebook_link','description_public','description_web','ticket_info','ticket_link','price','poster_url','poster_url_root','updated_at','seating') as $field){
@@ -969,7 +1013,7 @@ class marcatoxml_importer {
 					}
 				}
 			}			
-			$posts[$index] = compact('post_content', 'post_title', 'post_type', 'post_marcato_id','post_attachment','post_meta','post_excerpt');
+			$posts[$index] = compact('post_content', 'post_title', 'post_type', 'post_marcato_id','post_attachment','post_taxonomy','post_meta','post_excerpt');
 			$index++;
 		}
 		$this->remove_posts_missing_from_xml_feed($ids, $post_type, $org_id);
