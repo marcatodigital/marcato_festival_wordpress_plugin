@@ -288,21 +288,11 @@ class marcatoxml_plugin
 		));
 	}
 
-	public function import($field)
-	{
-		return $this->importer->import($field);
-	}
-
 	public function cron_job()
 	{
 		if ($this->importer->options["auto_update"] == "1") {
-			$this->import_all();
+			$this->importer->import_all();
 		}
-	}
-
-	public function import_all()
-	{
-		return $this->importer->import_all();
 	}
 
 	public function manage_update_schedule()
@@ -329,6 +319,26 @@ class marcatoxml_plugin
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 		}
 		if (isset($_POST['marcato_submit_hidden']) && $_POST['marcato_submit_hidden'] == 'Y') {
+			$import_feeds = array();
+			foreach ($this->importer->fields as $field) {
+				$name = 'import_' . $field;
+				$import_feeds[$field] = !empty($_POST[$name]);
+			}
+			$this->importer->import_feeds = $import_feeds;
+			$field_value = implode(',', array_keys(array_filter($import_feeds)));
+			update_option('import_feeds', $field_value);
+			$this->importer->options['import_feeds'] = $field_value;
+
+			$auto_publish = array();
+			foreach ($this->importer->fields as $post_type => $field) {
+				$name = 'publish_' . $field;
+				$auto_publish[$post_type] = $auto_publish_options[$field] = !empty($_POST[$name]);
+			}
+			$this->importer->auto_publish = $auto_publish;
+			$field_value = implode(',', array_keys(array_filter($auto_publish_options)));
+			update_option('auto_publish', $field_value);
+			$this->importer->options['auto_publish'] = $field_value;
+
 			foreach ($this->importer->options as $option => $value) {
 				if (isset($_POST[$option])) {
 					$field_value = $_POST[$option];
@@ -343,7 +353,8 @@ class marcatoxml_plugin
 			}
 			if (isset($_POST['marcato_import'])) {
 				echo("IMPORTING...<br>NOTE: If you are importing featured images this could take a while. If you get a maximum execution time exceeded message, please try the import again.");
-				$results = $this->import_all();
+				$purge = !empty($_POST['marcato_import_purge']);
+				$results = $this->importer->import_all($purge);
 				$errors = array();
 				foreach ($results as $result) {
 					if (is_string($result)) {
@@ -377,6 +388,26 @@ class marcatoxml_plugin
 				<strong>Enter each id separated by a comma</strong><br/>
 				<input type='text' name='marcato_organization_ids'
 					   value="<?php echo $this->importer->options["marcato_organization_ids"] ?>"/>
+			</p>
+			<p>
+				Which feeds to import?<br>
+				<?php foreach ($this->importer->fields as $field) : ?>
+					<?php $name = 'import_' . $field; ?>
+					<input type="hidden" name="<?php echo $name; ?>" value="0"/>
+					<input type="checkbox" name="<?php echo $name; ?>"
+						   value="1" <?php echo $this->importer->import_feeds[$field] == "1" ? "checked='checked'" : "" ?> />
+					<?php echo $field; ?>
+				<?php endforeach; ?>
+			</p>
+			<p>
+				Which feeds to auto publish (existing posts statuses will not be changed)?<br>
+				<?php foreach ($this->importer->fields as $post_type => $field) : ?>
+					<?php $name = 'publish_' . $field; ?>
+					<input type="hidden" name="<?php echo $name; ?>" value="0"/>
+					<input type="checkbox" name="<?php echo $name; ?>"
+						   value="1" <?php echo $this->importer->auto_publish[$post_type] == "1" ? "checked='checked'" : "" ?> />
+					<?php echo $field; ?>
+				<?php endforeach; ?>
 			</p>
 
 			<table>
@@ -526,6 +557,12 @@ class marcatoxml_plugin
 				<input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>"/>
 				<input type="submit" name="marcato_import" class="button-secondary"
 					   value="<?php esc_attr_e('Import Now') ?>"/>
+				<input type="hidden" name="marcato_import_purge" value="0">
+				<input type="checkbox" name="marcato_import_purge"
+					   value="1">
+				<label for="marcato_import_purge">
+					Remove all Marcato data that does not match the organization id's above listed?
+				</label>
 			</p>
 		</form>
 		<?php
@@ -547,16 +584,27 @@ class marcatoxml_importer
 		"include_artist_lineup" => "0",
 		"artist_lineup_set_times" => "0",
 		"post_photo_size" => "full",
-		"use_xml_label" => "0"
+		"use_xml_label" => "0",
+		"auto_publish" => "",
+		"import_feeds" => ""
 	);
-	public $fields = array("artists", "venues", "shows", "workshops", "contacts", "vendors");
+	public $fields = array(
+		"marcato_artist" => "artists",
+		"marcato_venue" => "venues",
+		"marcato_show" => "shows",
+		"marcato_workshop" => "workshops",
+		"marcato_contact" => "contacts",
+		"marcato_vendor" => "vendors"
+	);
+	public $import_feeds = array();
+	public $auto_publish = array();
 	public $marcato_xml_url = "http://marcatoweb.com/xml";
 
 	function marcatoxml_importer()
 	{
 		foreach ($this->options as $option => $value) {
 			$set_value = get_option($option);
-			if ($set_value == "1" || $set_value == "0" || $option == "marcato_organization_ids" || $option == "marcato_organization_ids" || $option == "post_photo_size") {
+			if ($set_value == "1" || $set_value == "0" || $option == "marcato_organization_ids" || $option == "marcato_organization_ids" || $option == "import_feeds" || $option == "auto_publish" || $option == "post_photo_size") {
 				$this->options[$option] = get_option($option);
 			}
 		}
@@ -564,27 +612,44 @@ class marcatoxml_importer
 			$this->options['marcato_organization_ids'] = $this->options['marcato_organization_id'];
 			update_option('marcato_organization_id');
 		}
+		$import_feeds = explode(',', $this->options['import_feeds']);
+		foreach ($this->fields as $field) {
+			$this->import_feeds[$field] = in_array($field, $import_feeds);
+		}
+		$auto_publish = explode(',', $this->options['auto_publish']);
+		foreach ($this->fields as $post_type => $field) {
+			$this->auto_publish[$post_type] = in_array($field, $auto_publish);
+		}
 	}
 
-	public function import_all()
+	public function import_all($purge = false)
 	{
 		if (empty($this->options['marcato_organization_ids'])) {
 			return array("Organization ID is not set.");
 		}
+		$org_ids = explode(',', $this->options['marcato_organization_ids']);
 
 		$results = array();
-		foreach ($this->fields as $field) {
-			$results[] = $this->import($field);
+		$fields = array_keys(array_filter($this->import_feeds));
+		foreach ($fields as $field) {
+			$results[] = $this->import($field, $org_ids);
 		}
+
+		if ($purge) {
+			foreach ($this->fields as $field) {
+				$this->remove_posts_missing_from_org_id($field, $org_ids);
+			}
+		}
+
 		if ($this->generate_schedule_page()) {
 			$results[] = "Schedule page generated successfully.";
 		}
+
 		return $results;
 	}
 
-	public function import($field)
+	public function import($field, $org_ids)
 	{
-		$org_ids = explode(',', $this->options['marcato_organization_ids']);
 		$errors = array();
 		foreach ($org_ids as $org_id) {
 			$org_id = trim($org_id);
@@ -601,6 +666,7 @@ class marcatoxml_importer
 				$errors[] = "Error importing {$field} for {$org_id}. Error loading xml file. The feed either does not exist, is empty, or there is a problem with your php settings. Ensure simpleXML and curl are enabled if you are not sure if they are enabled, or don't know how to enable them, contact your server administrator.";
 			}
 		}
+
 		return "{$field} Imported.\n" . implode("\n", $errors);
 	}
 
@@ -664,7 +730,7 @@ class marcatoxml_importer
 	{
 		$map = array();
 		$xml = $this->load_XML('presentations', $org_id);
-		foreach ($xml->presentation as $presentation) {
+		foreach ((array)$xml->presentation as $presentation) {
 			if ($presentation->presenter_type == 'Artist') {
 				if (!isset($map[(string)$presentation->presenter_id])) {
 					$map[(string)$presentation->presenter_id] = array();
@@ -714,6 +780,44 @@ class marcatoxml_importer
 		}
 	}
 
+	private function remove_posts_missing_from_org_id($field, $org_id)
+	{
+		if (empty($org_id)) {
+			return;
+		}
+
+		switch ($field) {
+			case 'artists':
+				$post_type = 'marcato_artist';
+				break;
+			case 'venues':
+				$post_type = 'marcato_venue';
+				break;
+			case 'shows':
+				$post_type = 'marcato_show';
+				break;
+			case 'workshops':
+				$post_type = 'marcato_workshop';
+				break;
+			case 'contacts':
+				$post_type = 'marcato_contact';
+				break;
+			case 'vendors':
+				$post_type = 'marcato_vendor';
+				break;
+			default:
+				return;
+		}
+
+		global $wpdb;
+		$org_id = join(',', $org_id);
+		$sql = "SELECT p.id FROM $wpdb->posts p WHERE p.post_type = '$post_type' AND EXISTS(SELECT * FROM $wpdb->postmeta m WHERE m.post_id = p.id AND m.meta_key = '{$post_type}_id') AND EXISTS(SELECT * FROM $wpdb->postmeta m WHERE m.post_id = p.id AND m.meta_key = 'marcato_organization_id' AND m.meta_value NOT IN ('$org_id'))";
+		$rows = $wpdb->get_results($sql);
+		foreach ($rows as $row) {
+			wp_delete_post($row->id, true);
+		}
+	}
+
 	private function import_post($post, $org_id)
 	{
 		global $wpdb;
@@ -741,6 +845,9 @@ class marcatoxml_importer
 		} else {
 			//If it doesn't exist create;
 			$post['post_status'] = "pending";
+			if (!empty($this->auto_publish[$post_type])) {
+				$post['post_status'] = "publish";
+			}
 			$post['comment_status'] = 'closed';
 			if ($post_id = wp_insert_post($post)) {
 				add_post_meta($post_id, "{$post_type}_id", $post_marcato_id, true);
