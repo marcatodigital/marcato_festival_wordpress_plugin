@@ -955,7 +955,7 @@ class marcatoxml_importer {
 				$post_meta = array_merge($post_meta, $this->parse_custom_fields('show', $show));
 
 				foreach($show->venue as $venue){
-					foreach(array('name','street','city','province_state','community','longitute','latitude','id') as $field){
+					foreach(array('name','street','city','province_state','community','longitude','latitude','id') as $field){
 						$post_meta["marcato_show_venue_".$field] = $venue->$field;
 					}
 				}
