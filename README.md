@@ -1,4 +1,4 @@
-*Current Version:1.7.5*
+*Current Version:1.8.0*
 
 **Versions lower than 1.7.4 contain a sql injection vulnerability. If you are using a version older than this, please update immediately**
 
