@@ -4,8 +4,8 @@
  * Description: Imports artists, venues, shows, contacts, vendors, and workshops from Marcato Festival XML Feeds.
  * Author: Marcato Digital Solutions
  * Author URI: http://marcatofestival.com
- * Plugin URI: http://github.com/morgancurrie/marcato_festival_wordpress_plugin
- * Version: 1.7.3
+ * Plugin URI: http://github.com/marcatodigital/marcato_festival_wordpress_plugin
+ * Version: 1.7.5
  * License: GPL2
  * =======================================================================
 	Copyright 2012  Marcato Digital Solutions  (email : support@marcatodigital.com)
@@ -31,10 +31,10 @@ if (is_admin()) {
 		'slug' => plugin_basename(__FILE__),
 		'transient_slug' => "marcato",
 		'proper_folder_name' => plugin_dir_path(__FILE__),
-		'api_url' => 'https://api.github.com/repos/morgancurrie/marcato_festival_wordpress_plugin',
-		'raw_url' => 'https://raw.github.com/morgancurrie/marcato_festival_wordpress_plugin/master',
-		'github_url' => 'https://github.com/morgancurrie/marcato_festival_wordpress_plugin',
-		'zip_url' => 'https://github.com/morgancurrie/marcato_festival_wordpress_plugin/zipball/master',
+		'api_url' => 'https://api.github.com/repos/marcatodigital/marcato_festival_wordpress_plugin',
+		'raw_url' => 'https://raw.github.com/marcatodigital/marcato_festival_wordpress_plugin/master',
+		'github_url' => 'https://github.com/marcatodigital/marcato_festival_wordpress_plugin',
+		'zip_url' => 'https://github.com/marcatodigital/marcato_festival_wordpress_plugin/zipball/master',
 		'sslverify' => true,
 		'requires' => '3.0',
 		'tested' => '3.5.1',
@@ -150,7 +150,7 @@ class marcatoxml_plugin
 				$post_type = $post_type;
 			} else {
 				$post_type = array(
-					'nav_menu_item',
+          'nav_menu_item',
 					'post',
 					'marcato_artist',
 					'marcato_show',
@@ -743,7 +743,7 @@ class marcatoxml_importer
 			}
 		}
 		return $map;
-	}
+  }
 
 	private function load_XML($field, $org_id)
 	{
@@ -1319,7 +1319,7 @@ class marcatoxml_importer
 								 'city',
 								 'province_state',
 								 'community',
-								 'longitute',
+								 'longitude',
 								 'latitude',
 								 'id'
 							 ) as $field) {
@@ -1735,7 +1735,7 @@ class marcatoxml_importer
 			if (!$workshop_xml && !$show_xml) {
 				return false;
 			}
-
+      
 			$post_title = "Schedule";
 			$post_content = "";
 			$events = array();
