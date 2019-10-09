@@ -1,7 +1,7 @@
 **1.8.0**
 * Added option to specify which feeds to import - Thanks @ceeram
 * Added option to specify if imported posts should be auto-published - Thanks @ceeram
-* Fixed longitude typo
+* Fixed longitude typo - Thanks @seanmacgillivray
 
 **1.7.5**
 * Update the marcato_xml_url variable to use HTTPS and point to the WWW subdomain, as that will make use of Cloudflare's CDN and improve caching.
