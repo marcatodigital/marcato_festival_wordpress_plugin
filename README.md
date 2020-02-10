@@ -61,11 +61,14 @@ Marcato's post types are name-spaced with marcato_ so our post types are marcato
 ## Common issues
 
 **Error loading xml file**
+
 This likely means that CURL is not enabled on your system. Check the output of phpinfo(); to determine if cURL is disabled and enable it, or contact your system administrator.
 This can also happen if that particular feed is not turned on in your marcato account, or it is empty.
 
 **Links between posts are not working**
+
 If you change certain WordPress settings (such as your permalink structure) you may need to update your Marcato data by clicking Import Now on the Marcato settings page.
 
 **Script execution timeouts**
+
 This is usually due to the downloading of images from marcato, and will only be an issue during the original import. You can verify if its the photos causing the issue by disabling the inclusion of featured images, and images in the post body, and try importing. If this finishes without issue, then the photos are the problem. Since the plugin will not re-download images it already has, you may be able to re-import using the plugin over and over until it eventually gets through everything. Or you can increase your php script timeout setting.
