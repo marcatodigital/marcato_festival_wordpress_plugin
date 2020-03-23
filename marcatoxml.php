@@ -1753,6 +1753,9 @@ class marcatoxml_importer
 			}
 			usort($events, array($this, 'sort_by_datetime'));
 			foreach ($events as $event) {
+				if (empty($event->date)) {
+					continue;
+				}
 				if ($event->type == "show") {
 					$types = 'performances';
 					$type = 'performance';

@@ -1,3 +1,6 @@
+**1.8.1**
+* Fixed bug on the schedule page that was including a 'ghost' event when either the show or workshop feeds were empty
+
 **1.8.0**
 * Added option to specify which feeds to import - Thanks @ceeram
 * Added option to specify if imported posts should be auto-published - Thanks @ceeram
